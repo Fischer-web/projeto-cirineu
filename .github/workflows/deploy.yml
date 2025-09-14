@@ -37,9 +37,17 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '20.x'
         registry-url: 'https://registry.npmjs.org'
         cache: ''
+        
+    - name: Verify Node.js version
+      run: |
+        echo "Node.js version:"
+        node --version
+        echo "NPM version:"
+        npm --version
+        echo "✓ Node.js setup complete"
     
     - name: Verify pnpm-lock.yaml exists
       run: |
@@ -68,8 +76,11 @@ jobs:
         # Remove any npm cache that might interfere
         rm -rf ~/.npm
         # Verify pnpm is working
+        echo "PNPM version:"
         pnpm --version
-        echo "✓ pnpm is working"
+        echo "Node.js version in pnpm context:"
+        pnpm exec node --version
+        echo "✓ pnpm is working with correct Node.js version"
         # Ensure we're using pnpm lock file
         ls -la pnpm-lock.yaml
     
