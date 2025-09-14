@@ -24,14 +24,25 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Setup pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v4
       with:
-        version: 8
+        version: 9
+        run_install: false
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
+        registry-url: 'https://registry.npmjs.org'
+    
+    - name: Verify pnpm-lock.yaml exists
+      run: |
+        if [ ! -f "pnpm-lock.yaml" ]; then
+          echo "Error: pnpm-lock.yaml not found!"
+          exit 1
+        fi
+        echo "✓ pnpm-lock.yaml found"
+        ls -la pnpm-lock.yaml
     
     - name: Get pnpm store directory
       shell: bash
@@ -39,15 +50,31 @@ jobs:
         echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
     
     - name: Setup pnpm cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ env.STORE_PATH }}
         key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pnpm-store-
     
+    - name: Clean npm cache and verify pnpm
+      run: |
+        # Remove any npm cache that might interfere
+        rm -rf ~/.npm
+        # Verify pnpm is working
+        pnpm --version
+        echo "✓ pnpm is working"
+        # Ensure we're using pnpm lock file
+        ls -la pnpm-lock.yaml
+    
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: |
+        echo "Installing dependencies with pnpm..."
+        # Force pnpm to use its own lock file
+        pnpm install --frozen-lockfile --prefer-frozen-lockfile
+        echo "✓ Dependencies installed successfully"
+        # Verify node_modules was created
+        ls -la node_modules/ | head -5
     
     - name: Build
       run: pnpm run build
