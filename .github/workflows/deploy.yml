@@ -23,10 +23,15 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     
+    - name: Create temporary package-lock.json
+      run: |
+        echo '{}' > package-lock.json
+        echo "✓ Temporary package-lock.json created"
+        ls -la package-lock.json
+    
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: 9
         run_install: false
     
     - name: Setup Node.js
@@ -34,6 +39,7 @@ jobs:
       with:
         node-version: '18'
         registry-url: 'https://registry.npmjs.org'
+        cache: ''
     
     - name: Verify pnpm-lock.yaml exists
       run: |
