@@ -29,17 +29,18 @@ jobs:
         echo "✓ Temporary package-lock.json created"
         ls -la package-lock.json
     
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        run_install: false
-    
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
         registry-url: 'https://registry.npmjs.org'
-        cache: ''
+        cache: 'npm'
+    
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9
+        run_install: false
         
     - name: Verify Node.js version
       run: |
@@ -47,7 +48,15 @@ jobs:
         node --version
         echo "NPM version:"
         npm --version
-        echo "✓ Node.js setup complete"
+        echo "PNPM version:"
+        pnpm --version
+        # Verify Node.js version is >= 20
+        NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+        if [ "$NODE_VERSION" -lt "20" ]; then
+          echo "❌ Error: Node.js version $NODE_VERSION is less than required 20"
+          exit 1
+        fi
+        echo "✓ Node.js $NODE_VERSION setup complete and compatible"
     
     - name: Verify pnpm-lock.yaml exists
       run: |
@@ -75,12 +84,20 @@ jobs:
       run: |
         # Remove any npm cache that might interfere
         rm -rf ~/.npm
+        # Clear any existing node_modules to avoid conflicts
+        rm -rf node_modules
         # Verify pnpm is working
         echo "PNPM version:"
         pnpm --version
         echo "Node.js version in pnpm context:"
         pnpm exec node --version
-        echo "✓ pnpm is working with correct Node.js version"
+        # Verify Node.js version in pnpm context is >= 20
+        PNPM_NODE_VERSION=$(pnpm exec node --version | cut -d'v' -f2 | cut -d'.' -f1)
+        if [ "$PNPM_NODE_VERSION" -lt "20" ]; then
+          echo "❌ Error: pnpm is using Node.js version $PNPM_NODE_VERSION, expected >= 20"
+          exit 1
+        fi
+        echo "✓ pnpm is working with correct Node.js version $PNPM_NODE_VERSION"
         # Ensure we're using pnpm lock file
         ls -la pnpm-lock.yaml
     
